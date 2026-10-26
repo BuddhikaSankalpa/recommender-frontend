@@ -128,6 +128,8 @@ export default function TitleSearch() {
     }
   }
 
+  const showContent = Boolean(searched || searchLoading || searchError || results.length || detailLoading || detailError || detail);
+
   return <section className="title-search-section" id="title-search" aria-labelledby="title-search-heading">
     <div className="title-search-intro"><div className="page-width title-search-intro-grid">
       <div><p className="eyebrow dark-eyebrow">02 / TITLE SEARCH</p><h2 id="title-search-heading" className="display-heading">LOOK BEYOND<br />THE POSTER.</h2><p className="title-search-lead">Find the details behind every film and series.</p></div>
@@ -144,8 +146,7 @@ export default function TitleSearch() {
       </div>
     </div></div>
 
-    <div className="title-search-content"><div className="page-width">
-      {!searched && !detail && !searchError && <p className="title-search-welcome">Search for a title to reveal its story, cast, and more.</p>}
+    {showContent && <div className="title-search-content"><div className="page-width">
       {searchError && <p className="title-search-message" role="alert">{searchError}</p>}
       {searchLoading && <p className="title-search-message" role="status"><Loader2 className="spin" size={20} aria-hidden="true" /> Searching titles...</p>}
       {searched && !searchLoading && !searchError && results.length === 0 && <p className="title-search-message" role="status">No matching titles found. Try another title or filter.</p>}
@@ -174,6 +175,6 @@ export default function TitleSearch() {
           <dl className="title-search-facts"><div><dt>{detail.Type === 'series' ? 'CREATOR / DIRECTOR' : 'DIRECTOR'}</dt><dd>{available(detail.Director)}</dd></div><div><dt>CAST</dt><dd>{available(detail.Actors)}</dd></div><div><dt>RELEASED</dt><dd>{available(detail.Released)}</dd></div></dl>
         </div>
       </article>}
-    </div></div>
+    </div></div>}
   </section>;
 }
