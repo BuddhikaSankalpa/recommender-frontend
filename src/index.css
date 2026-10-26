@@ -1,0 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root { font-family: 'DM Sans', Arial, sans-serif; color: #f5f3ec; background: #111513; font-synthesis: none; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid #e0f267; outline-offset: 4px; }
+::selection { background: #dff168; color: #151713; }
