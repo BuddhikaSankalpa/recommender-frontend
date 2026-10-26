@@ -5,14 +5,14 @@ import TitleSearch from './TitleSearch';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 const API_URL = 'http://127.0.0.1:8000/recommend';
+const SHELF_API_URL = 'http://127.0.0.1:8000/shelf';
 const heroImages = [
   '/images/hero-image-1.webp',
   '/images/hero-image-2.webp',
   '/images/hero-image-3.webp',
 ];
 
-// Editorial homepage selection from the existing movies_data.csv and tv_data.csv.
-// There is no catalogue endpoint, so this is presentation data only.
+// Editorial selections used by the other homepage sections.
 const titles = [
   { id: 329865, title: 'Arrival', type: 'movie', genres: 'Drama · Science Fiction · Mystery', poster: '/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg' },
   { id: 666277, title: 'Past Lives', type: 'movie', genres: 'Drama · Romance', poster: '/rzO71VFu7CpJMfF5TQNMj0d1lSV.jpg' },
@@ -39,10 +39,18 @@ function Poster({ title, path }) {
   </div>;
 }
 
+async function fetchShelfPage(filter, offset, signal) {
+  const params = new URLSearchParams({ media_type: filter, offset: String(offset) });
+  const response = await fetch(`${SHELF_API_URL}?${params}`, { signal });
+  if (!response.ok) throw new Error('Unable to load the discovery shelf. Please try again.');
+  return response.json();
+}
+
 export default function App() {
   const resultsRef = useRef(null);
   const searchControllerRef = useRef(null);
   const searchRequestRef = useRef(0);
+  const shelfRequestRef = useRef(null);
   const lastScrolledOutcomeRef = useRef(null);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [heroTimerReset, setHeroTimerReset] = useState(0);
@@ -50,6 +58,10 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [mediaType, setMediaType] = useState('movie');
   const [shelfFilter, setShelfFilter] = useState('all');
+  const [shelfTitles, setShelfTitles] = useState([]);
+  const [shelfHasMore, setShelfHasMore] = useState(false);
+  const [shelfLoading, setShelfLoading] = useState(true);
+  const [shelfError, setShelfError] = useState('');
   const [results, setResults] = useState([]);
   const [hasAttemptedSearch, setHasAttemptedSearch] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -86,6 +98,23 @@ export default function App() {
   }, [completedOutcomeId, prefersReducedMotion]);
 
   useEffect(() => () => searchControllerRef.current?.abort(), []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    shelfRequestRef.current = controller;
+    fetchShelfPage(shelfFilter, 0, controller.signal)
+      .then((data) => {
+        setShelfTitles(data.items);
+        setShelfHasMore(data.has_more);
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') setShelfError(err.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setShelfLoading(false);
+      });
+    return () => controller.abort();
+  }, [shelfFilter]);
 
   const selectHeroSlide = (index) => {
     setActiveHeroSlide(index);
@@ -151,7 +180,33 @@ export default function App() {
     handleSearch(title, type);
   };
 
-  const visibleTitles = titles.filter((item) => shelfFilter === 'all' || item.type === shelfFilter).slice(0, 5);
+  const selectShelfFilter = (filter) => {
+    if (filter === shelfFilter) return;
+    shelfRequestRef.current?.abort();
+    setShelfFilter(filter);
+    setShelfTitles([]);
+    setShelfHasMore(false);
+    setShelfError('');
+    setShelfLoading(true);
+  };
+
+  const loadMoreShelf = async () => {
+    if (shelfLoading) return;
+    const controller = new AbortController();
+    shelfRequestRef.current = controller;
+    setShelfLoading(true);
+    setShelfError('');
+    try {
+      const data = await fetchShelfPage(shelfFilter, shelfTitles.length, controller.signal);
+      if (controller.signal.aborted) return;
+      setShelfTitles((current) => [...current, ...data.items]);
+      setShelfHasMore(data.has_more);
+    } catch (err) {
+      if (err.name !== 'AbortError') setShelfError(err.message);
+    } finally {
+      if (!controller.signal.aborted) setShelfLoading(false);
+    }
+  };
 
   return <div className="site-shell" id="top">
     <a className="skip-link" href="#main">Skip to content</a>
@@ -159,8 +214,8 @@ export default function App() {
       <a className="brand" href="#top" aria-label="Frame home"><span className="brand-corner">⌜</span><span>FRAME</span><span className="brand-corner">⌝</span></a>
       <nav className="main-nav" aria-label="Main navigation">
         <a href="#discovery">Discover</a>
-        <a href="#discovery" onClick={() => setShelfFilter('movie')}>Movies</a>
-        <a href="#discovery" onClick={() => setShelfFilter('tv')}>TV Series</a>
+        <a href="#discovery" onClick={() => selectShelfFilter('movie')}>Movies</a>
+        <a href="#discovery" onClick={() => selectShelfFilter('tv')}>TV Series</a>
         <a href="#story-finder">Find Similar</a>
         <a href="#title-search">Title Search</a>
       </nav>
@@ -233,11 +288,15 @@ export default function App() {
 
       <section className="discovery-section" id="discovery" aria-labelledby="discovery-title"><div className="page-width">
         <div className="section-heading-row"><div><p className="eyebrow">03 / The discovery shelf</p><h2 id="discovery-title" className="display-heading">Worth your evening.</h2></div><div className="shelf-tabs" role="group" aria-label="Filter discovery titles">
-          <button className={shelfFilter === 'all' ? 'active' : ''} aria-pressed={shelfFilter === 'all'} onClick={() => setShelfFilter('all')}>All</button>
-          <button className={shelfFilter === 'movie' ? 'active' : ''} aria-pressed={shelfFilter === 'movie'} onClick={() => setShelfFilter('movie')}>Movies</button>
-          <button className={shelfFilter === 'tv' ? 'active' : ''} aria-pressed={shelfFilter === 'tv'} onClick={() => setShelfFilter('tv')}>TV Series</button>
+          <button className={shelfFilter === 'all' ? 'active' : ''} aria-pressed={shelfFilter === 'all'} onClick={() => selectShelfFilter('all')}>All</button>
+          <button className={shelfFilter === 'movie' ? 'active' : ''} aria-pressed={shelfFilter === 'movie'} onClick={() => selectShelfFilter('movie')}>Movies</button>
+          <button className={shelfFilter === 'tv' ? 'active' : ''} aria-pressed={shelfFilter === 'tv'} onClick={() => selectShelfFilter('tv')}>TV Series</button>
         </div></div>
-        <div className="poster-grid shelf-grid">{visibleTitles.map((item) => <button className="title-card shelf-card" type="button" key={item.id} onClick={() => searchForTitle(item.title, item.type)} aria-label={`Find stories similar to ${item.title}`}><Poster title={item.title} path={item.poster} /><span className="card-copy"><strong>{item.title}</strong><span>{item.type === 'movie' ? 'Film' : 'TV Series'} · {item.genres}</span></span></button>)}</div>
+        <div className="poster-grid shelf-grid">{shelfTitles.map((item) => <button className="title-card shelf-card" type="button" key={`${item.media_type}-${item.id}`} onClick={() => searchForTitle(item.title, item.media_type)} aria-label={`Find stories similar to ${item.title}`}><Poster title={item.title} path={item.poster_path} /><span className="card-copy"><strong>{item.title}</strong><span>{item.media_type === 'movie' ? 'Film' : 'TV Series'} · {item.genres?.split(',').slice(0, 3).join(' · ')}</span></span></button>)}</div>
+        {shelfLoading && <p className="shelf-status" role="status"><Loader2 className="spin" size={18} aria-hidden="true" /> Loading titles...</p>}
+        {shelfError && <p className="shelf-status" role="alert">{shelfError}</p>}
+        {!shelfLoading && !shelfError && shelfTitles.length === 0 && <p className="shelf-status">No titles found.</p>}
+        {!shelfLoading && (shelfHasMore || shelfError) && <button className="shelf-more" type="button" onClick={loadMoreShelf}>{shelfError ? 'Try again' : 'More'}</button>}
       </div></section>
 
       <section className="collections-section" aria-labelledby="collections-title"><div className="page-width"><p className="eyebrow">04 / Curated worlds</p><h2 id="collections-title" className="display-heading">Choose your kind of escape.</h2><div className="collection-grid">{collections.map((collection) => <article className={`collection-card ${collection.style}`} key={collection.title}><div className="collection-images" aria-hidden="true">{collection.posters.map((poster) => <Poster key={poster.id} title={poster.title} path={poster.poster} />)}</div><div className="collection-copy"><h3>{collection.title}</h3><p>{collection.caption}</p></div></article>)}</div></div></section>
@@ -245,6 +304,6 @@ export default function App() {
       <section className="spotlight-section" aria-labelledby="spotlight-title"><div className="spotlight-art"><Poster title="Dark" path={titles[5].poster} /><span>DARK</span></div><div className="spotlight-copy"><p className="eyebrow dark-eyebrow">05 / Series spotlight</p><h2 id="spotlight-title" className="display-heading">Some stories<br />take their time.</h2><p className="spotlight-name">Dark</p><p>A missing child. Four families. A mystery across generations.</p><button type="button" className="button button-lime" onClick={() => searchForTitle('Dark', 'tv')}>Find stories like Dark <ArrowUpRight size={17} aria-hidden="true" /></button></div></section>
     </main>
 
-    <footer className="site-footer"><div className="page-width"><div className="footer-main"><a className="brand" href="#top" aria-label="Frame home"><span className="brand-corner">⌜</span><span>FRAME</span><span className="brand-corner">⌝</span></a><p>Good stories are worth finding.</p><nav aria-label="Footer navigation"><a href="#top">Home</a><a href="#discovery" onClick={() => setShelfFilter('movie')}>Movies</a><a href="#discovery" onClick={() => setShelfFilter('tv')}>TV Series</a><a href="#story-finder">Find Similar</a></nav></div><div className="footer-bottom"><span>A place for people who love cinema.</span><span>Frame · Discovery journal</span></div></div></footer>
+    <footer className="site-footer"><div className="page-width"><div className="footer-main"><a className="brand" href="#top" aria-label="Frame home"><span className="brand-corner">⌜</span><span>FRAME</span><span className="brand-corner">⌝</span></a><p>Good stories are worth finding.</p><nav aria-label="Footer navigation"><a href="#top">Home</a><a href="#discovery" onClick={() => selectShelfFilter('movie')}>Movies</a><a href="#discovery" onClick={() => selectShelfFilter('tv')}>TV Series</a><a href="#story-finder">Find Similar</a></nav></div><div className="footer-bottom"><span>A place for people who love cinema.</span><span>Frame · Discovery journal</span></div></div></footer>
   </div>;
 }

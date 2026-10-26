@@ -98,6 +98,9 @@
 .card-overview { margin-top: .6rem !important; font-size: .78rem !important; }
 .shelf-card { background: transparent; border: 0; padding: 0; }
 .shelf-card:hover .poster img { transform: scale(1.04); }
+.shelf-status { display: flex; align-items: center; gap: .5rem; margin: 1.5rem 0 0; color: #b7bcb3; font-size: .85rem; }
+.shelf-more { display: block; margin: 1.7rem auto 0; padding: .7rem 1.5rem; border: 1px solid #e0f267; background: transparent; color: #e0f267; font-size: .85rem; font-weight: 700; }
+.shelf-more:hover { background: #e0f267; color: #111513; }
 .collections-section { border-top: 1px solid #555d55; padding: 1.7rem 0 2rem; }
 .collections-section .display-heading { font-size: clamp(2.8rem, 4.3vw, 4.5rem); margin-bottom: 1.1rem; }
 .collection-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; }
