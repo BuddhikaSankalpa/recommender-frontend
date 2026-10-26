@@ -51,6 +51,7 @@ export default function App() {
   const [mediaType, setMediaType] = useState('movie');
   const [shelfFilter, setShelfFilter] = useState('all');
   const [results, setResults] = useState([]);
+  const [hasAttemptedSearch, setHasAttemptedSearch] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastSearched, setLastSearched] = useState(null);
@@ -98,12 +99,14 @@ export default function App() {
     setResults([]);
     setError('');
     setIsLoading(false);
+    setHasAttemptedSearch(false);
   };
 
   const handleSearch = async (searchTitle = query, searchType = mediaType) => {
     const requestId = ++searchRequestRef.current;
     searchControllerRef.current?.abort();
     const trimmed = (typeof searchTitle === 'string' ? searchTitle : query).trim();
+    setHasAttemptedSearch(true);
     setResults([]);
     setError('');
     if (!trimmed) {
@@ -218,12 +221,13 @@ export default function App() {
         </div>
       </div></section>
 
-      {(error || isLoading || results.length > 0) && <section className="results-section" id="recommendations" ref={resultsRef} aria-labelledby="results-title"><div className="page-width">
+      <section className={`results-section${!hasAttemptedSearch ? ' is-initial' : ''}`} id="recommendations" ref={resultsRef} aria-labelledby="results-title"><div className="page-width">
         <p className="eyebrow">Your next chapter</p><h2 id="results-title" className="display-heading">Stories to follow.</h2>
+        {!hasAttemptedSearch && <p className="results-intro-copy">Choose a film or series above. We’ll find where the story leads.</p>}
         {error && <p className="status-message" role="alert">{error}</p>}
         {isLoading && <p className="status-message" role="status"><Loader2 className="spin" size={20} aria-hidden="true" /> Finding related stories...</p>}
         {!isLoading && results.length > 0 && <><p className="results-context">Based on <strong>{lastSearched}</strong> · {lastSearchedType === 'movie' ? 'Movies' : 'TV Series'}</p><div className="poster-grid results-grid">{results.map((item, index) => <article className="title-card" key={`${item.id}-${index}`}><Poster title={item.title} path={item.poster_path} /><div className="card-copy"><h3>{item.title}</h3><p>{item.genres?.split(',').slice(0, 3).join(' · ')}</p><p className="card-overview">{item.overview || 'No synopsis available.'}</p></div></article>)}</div></>}
-      </div></section>}
+      </div></section>
 
       <TitleSearch />
 

@@ -75,6 +75,11 @@
 .results-section, .discovery-section, .collections-section { background: #111513; color: #f5f3ec; }
 .results-section { padding: 3rem 0; border-bottom: 1px solid #535a52; scroll-margin-top: calc(66px + 1rem); }
 .results-section .display-heading { margin-bottom: 1rem; }
+.results-section.is-initial { padding: 0; background: linear-gradient(90deg, rgba(7, 14, 13, .56), rgba(7, 14, 13, .05) 75%), url('/images/stories-to-follow-bg.webp') center center / cover no-repeat; }
+.results-section.is-initial .page-width { position: relative; display: flex; min-height: clamp(270px, 24vw, 380px); flex-direction: column; justify-content: center; align-items: flex-start; padding-left: clamp(3.5rem, 7vw, 7rem); }
+.results-section.is-initial .page-width::before { content: ''; position: absolute; left: 0; top: 50%; width: 2px; height: clamp(110px, 12vw, 150px); background: #e7dfc3; transform: translateY(-50%); }
+.results-section.is-initial .display-heading { margin-bottom: .75rem; font-size: clamp(3.8rem, 5.8vw, 6.2rem); }
+.results-intro-copy { max-width: 540px; margin: 0; font-size: clamp(.92rem, 1.15vw, 1.1rem); line-height: 1.5; }
 .status-message { display: flex; gap: .6rem; align-items: center; padding: 1rem; border: 1px solid #89926e; width: fit-content; max-width: 100%; }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -136,6 +141,10 @@
 }
 @media (max-width: 700px) {
   .results-section { scroll-margin-top: 120px; }
+  .results-section.is-initial { background-image: linear-gradient(90deg, rgba(7, 14, 13, .9), rgba(7, 14, 13, .64) 72%, rgba(7, 14, 13, .36)), url('/images/stories-to-follow-bg.webp'); background-position: center, 68% center; }
+  .results-section.is-initial .page-width { min-height: 310px; padding-left: 2.4rem; }
+  .results-section.is-initial .display-heading { font-size: clamp(3.5rem, 12vw, 5.2rem); }
+  .results-section.is-initial .page-width::before { height: 140px; }
   .page-width { width: min(100% - 2rem, 1500px); }
   .site-header { height: auto; }
   .header-inner { min-height: 64px; flex-wrap: wrap; column-gap: .8rem; padding-block: .8rem; }
