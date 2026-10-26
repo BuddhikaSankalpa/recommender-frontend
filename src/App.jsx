@@ -50,7 +50,11 @@ export default function App() {
   const [error, setError] = useState('');
   const [lastSearched, setLastSearched] = useState(null);
   const [lastSearchedType, setLastSearchedType] = useState('movie');
-  const suggestions = { movie: ['Inception', 'Interstellar', 'The Dark Knight'], tv: ['Breaking Bad', 'Stranger Things', 'Dark'] };
+  const suggestions = [
+    { title: 'Inception', type: 'movie' },
+    { title: 'Interstellar', type: 'movie' },
+    { title: 'Dark', type: 'tv' },
+  ];
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -163,7 +167,7 @@ export default function App() {
       </section>
 
       <section className="finder-section" id="story-finder" aria-labelledby="finder-title"><div className="page-width finder-layout">
-        <div className="finder-intro"><p className="eyebrow dark-eyebrow">01 / The story finder</p><h2 id="finder-title" className="display-heading">Loved a film<br />Follow the story.</h2><br /><p>Discover movies and series with similar stories.</p></div>
+        <div className="finder-intro"><p className="eyebrow dark-eyebrow">01 / THE STORY FINDER <ArrowUpRight size={16} aria-hidden="true" /></p><h2 id="finder-title" className="display-heading">Loved a film<br />Follow the story.</h2><p>Discover movies and series with similar stories.</p></div>
         <div className="finder-panel">
           <div className="media-toggle" role="group" aria-label="Choose a title type">
             <button type="button" className={mediaType === 'movie' ? 'active' : ''} aria-pressed={mediaType === 'movie'} onClick={() => selectMediaType('movie')}>Movies</button>
@@ -171,11 +175,11 @@ export default function App() {
           </div>
           <form className="finder-form" onSubmit={(event) => { event.preventDefault(); handleSearch(); }}>
             <label className="sr-only" htmlFor="title-search">Enter a movie or TV series title</label><Search size={20} aria-hidden="true" />
-            <input id="title-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={mediaType === 'movie' ? 'Enter a movie title...' : 'Enter a TV series title...'} />
+            <input id="title-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Enter a movie or series..." />
             <button type="submit" disabled={isLoading}>{isLoading ? 'Finding stories...' : 'Find similar'} <ArrowUpRight size={16} aria-hidden="true" /></button>
           </form>
-          <div className="suggestions"><span>Try:</span>{suggestions[mediaType].map((title) => <button type="button" key={title} onClick={() => searchForTitle(title, mediaType)}>{title}</button>)}</div>
-          <div className="finder-art" aria-hidden="true"><Poster title="Arrival" path="/5B14ls1dftgOyTSRdzV9EPCa5pR.jpg" /><Poster title="Interstellar" path="/pbrkL804c8yAv3zBZR4QPEafpAR.jpg" /><Poster title="Dark" path="/75HgaphatW0PDI3XIHQWZUpbhn6.jpg" /><p>A new direction<br />for your next watch.</p></div>
+          <div className="suggestions"><span>Try:</span>{suggestions.map(({ title, type }) => <button type="button" key={title} onClick={() => searchForTitle(title, type)}>{title}</button>)}</div>
+          <div className="finder-art"><div className="finder-collage" aria-hidden="true"><img src="/images/story-city.webp" alt="" /><img src="/images/story-astronaut.webp" alt="" /><img src="/images/story-forest.webp" alt="" /></div><div className="finder-art-caption"><p>A new direction<br />for your next watch.</p><span aria-hidden="true" /></div></div>
         </div>
       </div></section>
 
