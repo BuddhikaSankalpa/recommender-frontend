@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, Film, Loader2, Search } from 'lucide-react';
 import './App.css';
 
@@ -39,6 +39,7 @@ function Poster({ title, path }) {
 }
 
 export default function App() {
+  const resultsRef = useRef(null);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [heroTimerReset, setHeroTimerReset] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -71,6 +72,12 @@ export default function App() {
     }, 6000);
     return () => window.clearTimeout(timer);
   }, [activeHeroSlide, heroTimerReset, prefersReducedMotion]);
+
+  useEffect(() => {
+    if (!isLoading && !error && results.length > 0) {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [isLoading, error, results]);
 
   const selectHeroSlide = (index) => {
     setActiveHeroSlide(index);
@@ -167,7 +174,7 @@ export default function App() {
       </section>
 
       <section className="finder-section" id="story-finder" aria-labelledby="finder-title"><div className="page-width finder-layout">
-        <div className="finder-intro"><p className="eyebrow dark-eyebrow">01 / THE STORY FINDER <ArrowUpRight size={16} aria-hidden="true" /></p><h2 id="finder-title" className="display-heading">Loved a film<br />Follow the story.</h2><p>Discover movies and series with similar stories.</p></div>
+        <div className="finder-intro"><p className="eyebrow dark-eyebrow">01 / THE STORY FINDER </p><h2 id="finder-title" className="display-heading">Loved a film<br />Follow the story</h2><p>Discover movies and series with similar stories.</p></div>
         <div className="finder-panel">
           <div className="media-toggle" role="group" aria-label="Choose a title type">
             <button type="button" className={mediaType === 'movie' ? 'active' : ''} aria-pressed={mediaType === 'movie'} onClick={() => selectMediaType('movie')}>Movies</button>
@@ -183,7 +190,7 @@ export default function App() {
         </div>
       </div></section>
 
-      {(error || isLoading || results.length > 0) && <section className="results-section" id="recommendations" aria-labelledby="results-title"><div className="page-width">
+      {(error || isLoading || results.length > 0) && <section className="results-section" id="recommendations" ref={resultsRef} aria-labelledby="results-title"><div className="page-width">
         <p className="eyebrow">Your next chapter</p><h2 id="results-title" className="display-heading">Stories to follow.</h2>
         {error && <p className="status-message" role="alert">{error}</p>}
         {isLoading && <p className="status-message" role="status"><Loader2 className="spin" size={20} aria-hidden="true" /> Finding related stories...</p>}
