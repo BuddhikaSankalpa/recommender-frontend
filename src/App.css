@@ -104,16 +104,23 @@
 .collections-section { border-top: 1px solid #555d55; padding: 1.7rem 0 2rem; }
 .collections-section .display-heading { font-size: clamp(2.8rem, 4.3vw, 4.5rem); margin-bottom: 1.1rem; }
 .collection-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; }
-.collection-card { height: 255px; position: relative; overflow: hidden; background: #342322; }
-.collection-images { position: absolute; inset: 0; display: flex; opacity: .48; }
-.collection-images .poster { height: 100%; width: 50%; }
-.collection-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(13,13,13,.66), transparent), linear-gradient(0deg, rgba(0,0,0,.5), transparent 65%); }
+.collection-card { height: 255px; position: relative; overflow: hidden; display: block; width: 100%; padding: 0; border: 0; border-radius: 8px; background: #342322; color: inherit; text-align: left; cursor: pointer; touch-action: manipulation; transition: transform .28s ease, box-shadow .28s ease; }
+.collection-card:hover, .collection-card:focus-visible { transform: translateY(-5px); box-shadow: 0 16px 28px rgba(0,0,0,.35); }
+.collection-card:focus-visible { outline: 2px solid #e0f267; outline-offset: 3px; }
+.collection-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .45s ease; }
+.collection-card:hover .collection-image, .collection-card:focus-visible .collection-image { transform: scale(1.055); }
+.collection-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.83), rgba(0,0,0,.32) 52%, rgba(0,0,0,.04)); pointer-events: none; }
 .collection-card.strange { background: #922f2b; }
 .collection-card.beyond { background: #18354b; }
 .collection-card.episode { background: #1a3532; }
-.collection-copy { position: absolute; z-index: 1; left: 1.6rem; bottom: 1.3rem; right: 1rem; }
-.collection-copy h3 { font-family: Georgia, serif; font-size: clamp(1.8rem, 3vw, 3.1rem); font-style: italic; font-weight: 400; line-height: .98; max-width: 230px; margin: 0 0 1rem; }
-.collection-copy p { max-width: 220px; border-top: 1px solid #d3d9cf; padding-top: .65rem; font-size: .72rem; margin: 0; }
+.collection-copy { position: absolute; z-index: 1; left: 1.6rem; bottom: 1.3rem; right: 1rem; pointer-events: none; }
+.collection-copy strong { display: block; font-family: Georgia, serif; font-size: clamp(1.8rem, 3vw, 3.1rem); font-style: italic; font-weight: 400; line-height: .98; max-width: 230px; margin: 0 0 1rem; }
+.collection-caption { display: block; max-width: 220px; border-top: 1px solid #d3d9cf; padding-top: .65rem; font-size: .72rem; margin: 0; }
+.collection-cue { display: flex; align-items: center; gap: .35rem; margin-top: .7rem; color: #e0f267; font-size: .72rem; font-weight: 700; opacity: 0; transform: translateY(4px); transition: opacity .28s ease, transform .28s ease; }
+.collection-card:hover .collection-cue, .collection-card:focus-visible .collection-cue, .collection-card.selected .collection-cue { opacity: 1; transform: none; }
+.collection-results { margin-top: 2rem; padding-top: 1.4rem; border-top: 1px solid #555d55; scroll-margin-top: 1rem; }
+.collection-results h3 { margin: 0 0 1.2rem; font-family: 'Barlow Condensed', Impact, sans-serif; font-size: clamp(2.2rem, 3.5vw, 3.5rem); line-height: 1; }
+.collection-posters { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .spotlight-section { display: grid; grid-template-columns: 59% 41%; min-height: 330px; }
 .spotlight-art { position: relative; overflow: hidden; background: #0f1b1b; }
 .spotlight-art .poster { position: absolute; inset: 0; opacity: .55; }
@@ -140,6 +147,7 @@
   .finder-intro .display-heading { font-size: clamp(4rem, 6.5vw, 6.2rem); }
   .finder-collage { flex-basis: 64%; height: 220px; }
   .poster-grid { gap: .65rem; }
+  .collection-posters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .spotlight-copy { padding-right: 2rem; }
 }
 @media (max-width: 700px) {
@@ -175,6 +183,7 @@
   .poster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
   .collection-grid { grid-template-columns: 1fr; }
   .collection-card { height: 220px; }
+  .collection-posters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .spotlight-section { grid-template-columns: 1fr; }
   .spotlight-art { height: 260px; }
   .spotlight-copy { padding: 2.3rem 1rem; }
@@ -194,4 +203,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hero-slide { transition: none; }
+  .collection-card, .collection-image, .collection-cue { transition: none; }
+}
+@media (hover: none) {
+  .collection-cue { opacity: 1; transform: none; }
 }

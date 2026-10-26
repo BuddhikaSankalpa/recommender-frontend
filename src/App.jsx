@@ -26,9 +26,39 @@ const titles = [
 ];
 
 const collections = [
-  { title: 'Beautifully strange', caption: 'Stories that take the unexpected road.', style: 'strange', posters: [titles[3], titles[4]] },
-  { title: 'Beyond our world', caption: 'The great unknown, a little closer.', style: 'beyond', posters: [titles[0], titles[6]] },
-  { title: 'One more episode', caption: 'Mysteries worth staying up for.', style: 'episode', posters: [titles[5], titles[7]] },
+  {
+    title: 'Beautifully strange', caption: 'Stories that take the unexpected road.', style: 'strange', image: '/images/beautifully-strange.webp',
+    titles: [
+      { id: 545611, title: 'Everything Everywhere All at Once', type: 'movie', poster: '/rKvCys0fMIIi1X9rmJBxTPLAtoU.jpg' },
+      { id: 120467, title: 'The Grand Budapest Hotel', type: 'movie', poster: '/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg' },
+      { id: 38, title: 'Eternal Sunshine of the Spotless Mind', type: 'movie', poster: '/5MwkWH9tYHv3mV9OdYTMR5qreIz.jpg' },
+      { id: 254320, title: 'The Lobster', type: 'movie', poster: '/7Y9ILV1unpW9mLpGcqyGQU72LUy.jpg' },
+      { id: 347031, title: 'Swiss Army Man', type: 'movie', poster: '/8pxn8CQ6SD6tly75lrKw08wfZKv.jpg' },
+      { id: 84977, title: 'Russian Doll', type: 'tv', poster: '/1ju4vQ1EwlIkQxEgWiYmxOs3iBG.jpg' },
+    ],
+  },
+  {
+    title: 'Beyond our world', caption: 'The great unknown, a little closer.', style: 'beyond', image: '/images/beyond-our-world.webp',
+    titles: [
+      { id: 329865, title: 'Arrival', type: 'movie', poster: '/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg' },
+      { id: 157336, title: 'Interstellar', type: 'movie', poster: '/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg' },
+      { id: 438631, title: 'Dune', type: 'movie', poster: '/d5NXSklXo0qyIYkgV94XAgMIckC.jpg' },
+      { id: 286217, title: 'The Martian', type: 'movie', poster: '/5BHuvQ6p9kfc091Z8RiFNhCwL4b.jpg' },
+      { id: 93740, title: 'Foundation', type: 'tv', poster: '/1AZERr7KEJBpcchQ6vFcbUUC0Zw.jpg' },
+      { id: 63639, title: 'The Expanse', type: 'tv', poster: '/lLidDKUYF5pcmH7zaM6J6nyRQGG.jpg' },
+    ],
+  },
+  {
+    title: 'One more episode', caption: 'Mysteries worth staying up for.', style: 'episode', image: '/images/one-more-episode.webp',
+    titles: [
+      { id: 70523, title: 'Dark', type: 'tv', poster: '/apbrbWs8M9lyOpJYU5WXrpFbk1Z.jpg' },
+      { id: 66732, title: 'Stranger Things', type: 'tv', poster: '/49WJfeN0moxb9IPfGn8AIqMGskD.jpg' },
+      { id: 100088, title: 'The Last of Us', type: 'tv', poster: '/uKvVjHNqB5VmOrdxqAt2F7J78ED.jpg' },
+      { id: 1396, title: 'Breaking Bad', type: 'tv', poster: '/3xnWaLQjelJDDF7LT1WBo6f4BRe.jpg' },
+      { id: 136315, title: 'The Bear', type: 'tv', poster: '/3MVHF64rlvH1eofKefIoazXwOK0.jpg' },
+      { id: 95396, title: 'Severance', type: 'tv', poster: '/lFf6LLrQjYldcZItzOkGmMMigP7.jpg' },
+    ],
+  },
 ];
 
 function Poster({ title, path }) {
@@ -48,6 +78,7 @@ async function fetchShelfPage(filter, offset, signal) {
 
 export default function App() {
   const resultsRef = useRef(null);
+  const collectionRef = useRef(null);
   const searchControllerRef = useRef(null);
   const searchRequestRef = useRef(0);
   const shelfRequestRef = useRef(null);
@@ -62,6 +93,7 @@ export default function App() {
   const [shelfHasMore, setShelfHasMore] = useState(false);
   const [shelfLoading, setShelfLoading] = useState(true);
   const [shelfError, setShelfError] = useState('');
+  const [selectedCollection, setSelectedCollection] = useState(null);
   const [results, setResults] = useState([]);
   const [hasAttemptedSearch, setHasAttemptedSearch] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -97,6 +129,15 @@ export default function App() {
     resultsRef.current.scrollIntoView({ behavior: prefersReducedMotion ? 'instant' : 'smooth', block: 'start' });
   }, [completedOutcomeId, prefersReducedMotion]);
 
+  useEffect(() => {
+    if (!selectedCollection || !collectionRef.current) return;
+    const heading = collectionRef.current.querySelector('h3');
+    const bounds = heading.getBoundingClientRect();
+    if (bounds.top < 16 || bounds.bottom > window.innerHeight - 16) {
+      collectionRef.current.scrollIntoView({ behavior: prefersReducedMotion ? 'instant' : 'smooth', block: 'start' });
+    }
+  }, [selectedCollection, prefersReducedMotion]);
+
   useEffect(() => () => searchControllerRef.current?.abort(), []);
 
   useEffect(() => {
@@ -131,7 +172,7 @@ export default function App() {
     setHasAttemptedSearch(false);
   };
 
-  const handleSearch = async (searchTitle = query, searchType = mediaType) => {
+  const handleSearch = async (searchTitle = query, searchType = mediaType, tmdbId = null) => {
     const requestId = ++searchRequestRef.current;
     searchControllerRef.current?.abort();
     const trimmed = (typeof searchTitle === 'string' ? searchTitle : query).trim();
@@ -153,7 +194,7 @@ export default function App() {
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: trimmed, media_type: searchType, top_k: 5 }),
+        body: JSON.stringify({ title: trimmed, media_type: searchType, top_k: 5, ...(tmdbId === null ? {} : { tmdb_id: tmdbId }) }),
         signal: controller.signal,
       });
       const data = await response.json();
@@ -174,10 +215,10 @@ export default function App() {
     }
   };
 
-  const searchForTitle = (title, type) => {
+  const searchForTitle = (title, type, tmdbId = null) => {
     setQuery(title);
     setMediaType(type);
-    handleSearch(title, type);
+    handleSearch(title, type, tmdbId);
   };
 
   const selectShelfFilter = (filter) => {
@@ -299,7 +340,24 @@ export default function App() {
         {!shelfLoading && (shelfHasMore || shelfError) && <button className="shelf-more" type="button" onClick={loadMoreShelf}>{shelfError ? 'Try again' : 'More'}</button>}
       </div></section>
 
-      <section className="collections-section" aria-labelledby="collections-title"><div className="page-width"><p className="eyebrow">04 / Curated worlds</p><h2 id="collections-title" className="display-heading">Choose your kind of escape.</h2><div className="collection-grid">{collections.map((collection) => <article className={`collection-card ${collection.style}`} key={collection.title}><div className="collection-images" aria-hidden="true">{collection.posters.map((poster) => <Poster key={poster.id} title={poster.title} path={poster.poster} />)}</div><div className="collection-copy"><h3>{collection.title}</h3><p>{collection.caption}</p></div></article>)}</div></div></section>
+      <section className="collections-section" aria-labelledby="collections-title"><div className="page-width">
+        <p className="eyebrow">04 / Curated worlds</p><h2 id="collections-title" className="display-heading">Choose your kind of escape.</h2>
+        <div className="collection-grid">{collections.map((collection) => <button
+          className={`collection-card ${collection.style}${selectedCollection?.style === collection.style ? ' selected' : ''}`}
+          type="button" key={collection.title} onClick={() => setSelectedCollection(collection)}
+          aria-expanded={selectedCollection?.style === collection.style} aria-controls="curated-collection"
+        >
+          <img className="collection-image" src={collection.image} alt="" loading="lazy" />
+          <span className="collection-copy"><strong>{collection.title}</strong><span className="collection-caption">{collection.caption}</span><span className="collection-cue">Explore collection <ArrowUpRight size={15} aria-hidden="true" /></span></span>
+        </button>)}</div>
+        {selectedCollection && <div className="collection-results" id="curated-collection" ref={collectionRef} aria-labelledby="selected-collection-title">
+          <h3 id="selected-collection-title">{selectedCollection.title}</h3>
+          <div className="poster-grid collection-posters">{selectedCollection.titles.map((item) => <button
+            className="title-card shelf-card" type="button" key={`${item.type}-${item.id}`}
+            onClick={() => searchForTitle(item.title, item.type, item.id)} aria-label={`Find stories similar to ${item.title}`}
+          ><Poster title={item.title} path={item.poster} /><span className="card-copy"><strong>{item.title}</strong><span>{item.type === 'movie' ? 'Movie' : 'TV Series'}</span></span></button>)}</div>
+        </div>}
+      </div></section>
 
       <section className="spotlight-section" aria-labelledby="spotlight-title"><div className="spotlight-art"><Poster title="Dark" path={titles[5].poster} /><span>DARK</span></div><div className="spotlight-copy"><p className="eyebrow dark-eyebrow">05 / Series spotlight</p><h2 id="spotlight-title" className="display-heading">Some stories<br />take their time.</h2><p className="spotlight-name">Dark</p><p>A missing child. Four families. A mystery across generations.</p><button type="button" className="button button-lime" onClick={() => searchForTitle('Dark', 'tv')}>Find stories like Dark <ArrowUpRight size={17} aria-hidden="true" /></button></div></section>
     </main>
