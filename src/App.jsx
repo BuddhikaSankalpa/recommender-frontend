@@ -139,9 +139,11 @@ export default function App() {
         </div>
         <div className="hero-shade" />
         <div className="page-width hero-content">
-          <p className="eyebrow">For the love of the story</p>
-          <h1 id="hero-title">Your next<br />obsession<br />starts here.</h1>
-          <p className="hero-copy">Discover remarkable films. Find stories that stay with you.</p>
+          <p className="eyebrow">STORY BASED FILM & TV DISCOVERY</p>
+          <h1 id="hero-title">FIND MORE<br />FILMS & TV<br />MATCHING <br />YOURS </h1>
+          <br></br>
+          <p className="hero-copy">Enter a film or TV series you love. Discover movies and shows with similar storylines.</p>
+          <br></br>
           <div className="hero-actions"><a className="button button-lime" href="#discovery">Explore films <ArrowUpRight size={17} aria-hidden="true" /></a><a className="text-link" href="#story-finder">Find a similar story <ArrowRight size={17} aria-hidden="true" /></a></div>
         </div>
         <div className="hero-pagination" aria-label="Hero slides">
@@ -157,11 +159,11 @@ export default function App() {
             />)}
           </div>
         </div>
-        <div className="hero-caption"><span>In the spotlight</span><strong>Interstellar</strong><small>Science fiction · Film</small></div>
+        <div className="hero-caption"><span>EXPLORE BY STORY</span><strong>STORY FINDER</strong><small>SIMILAR FILMS · SERIES</small></div>
       </section>
 
       <section className="finder-section" id="story-finder" aria-labelledby="finder-title"><div className="page-width finder-layout">
-        <div className="finder-intro"><p className="eyebrow dark-eyebrow">01 / The story finder</p><h2 id="finder-title" className="display-heading">Loved a film?<br />Follow the story.</h2><p>Discover movies and series with similar stories.</p></div>
+        <div className="finder-intro"><p className="eyebrow dark-eyebrow">01 / The story finder</p><h2 id="finder-title" className="display-heading">Loved a film<br />Follow the story.</h2><br /><p>Discover movies and series with similar stories.</p></div>
         <div className="finder-panel">
           <div className="media-toggle" role="group" aria-label="Choose a title type">
             <button type="button" className={mediaType === 'movie' ? 'active' : ''} aria-pressed={mediaType === 'movie'} onClick={() => selectMediaType('movie')}>Movies</button>
