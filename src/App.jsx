@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, Film, Loader2, Search } from 'lucide-react';
 import './App.css';
+import TitleSearch from './TitleSearch';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 const API_URL = 'http://127.0.0.1:8000/recommend';
@@ -40,6 +41,9 @@ function Poster({ title, path }) {
 
 export default function App() {
   const resultsRef = useRef(null);
+  const searchControllerRef = useRef(null);
+  const searchRequestRef = useRef(0);
+  const lastScrolledOutcomeRef = useRef(null);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [heroTimerReset, setHeroTimerReset] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -51,6 +55,7 @@ export default function App() {
   const [error, setError] = useState('');
   const [lastSearched, setLastSearched] = useState(null);
   const [lastSearchedType, setLastSearchedType] = useState('movie');
+  const [completedOutcomeId, setCompletedOutcomeId] = useState(null);
   const suggestions = [
     { title: 'Inception', type: 'movie' },
     { title: 'Interstellar', type: 'movie' },
@@ -74,10 +79,12 @@ export default function App() {
   }, [activeHeroSlide, heroTimerReset, prefersReducedMotion]);
 
   useEffect(() => {
-    if (!isLoading && !error && results.length > 0) {
-      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [isLoading, error, results]);
+    if (completedOutcomeId === null || lastScrolledOutcomeRef.current === completedOutcomeId || !resultsRef.current) return;
+    lastScrolledOutcomeRef.current = completedOutcomeId;
+    resultsRef.current.scrollIntoView({ behavior: prefersReducedMotion ? 'instant' : 'smooth', block: 'start' });
+  }, [completedOutcomeId, prefersReducedMotion]);
+
+  useEffect(() => () => searchControllerRef.current?.abort(), []);
 
   const selectHeroSlide = (index) => {
     setActiveHeroSlide(index);
@@ -85,16 +92,29 @@ export default function App() {
   };
 
   const selectMediaType = (type) => {
+    searchRequestRef.current += 1;
+    searchControllerRef.current?.abort();
     setMediaType(type);
     setResults([]);
     setError('');
+    setIsLoading(false);
   };
 
   const handleSearch = async (searchTitle = query, searchType = mediaType) => {
+    const requestId = ++searchRequestRef.current;
+    searchControllerRef.current?.abort();
     const trimmed = (typeof searchTitle === 'string' ? searchTitle : query).trim();
-    if (!trimmed) { setError('Please enter a title to get recommendations.'); return; }
-    setIsLoading(true);
+    setResults([]);
     setError('');
+    if (!trimmed) {
+      setIsLoading(false);
+      setError('Please enter a title to get recommendations.');
+      setCompletedOutcomeId(requestId);
+      return;
+    }
+    const controller = new AbortController();
+    searchControllerRef.current = controller;
+    setIsLoading(true);
     setLastSearched(trimmed);
     setLastSearchedType(searchType);
     try {
@@ -102,23 +122,30 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: trimmed, media_type: searchType, top_k: 5 }),
+        signal: controller.signal,
       });
       const data = await response.json();
+      if (requestId !== searchRequestRef.current) return;
       if (!response.ok) throw new Error(data.detail || `Error ${response.status}: Failed to fetch recommendations.`);
       setResults(data.results || []);
       if (!data.results || data.results.length === 0) setError(`No recommendations found for "${trimmed}". Try another title.`);
     } catch (err) {
+      if (requestId !== searchRequestRef.current || err.name === 'AbortError') return;
       console.error('Recommendation fetch error:', err);
       setResults([]);
       setError(err.message || 'Unable to connect to the backend server. Make sure FastAPI is running on port 8000.');
-    } finally { setIsLoading(false); }
+    } finally {
+      if (requestId === searchRequestRef.current) {
+        setIsLoading(false);
+        setCompletedOutcomeId(requestId);
+      }
+    }
   };
 
   const searchForTitle = (title, type) => {
     setQuery(title);
     setMediaType(type);
     handleSearch(title, type);
-    document.getElementById('story-finder')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const visibleTitles = titles.filter((item) => shelfFilter === 'all' || item.type === shelfFilter).slice(0, 5);
@@ -132,6 +159,7 @@ export default function App() {
         <a href="#discovery" onClick={() => setShelfFilter('movie')}>Movies</a>
         <a href="#discovery" onClick={() => setShelfFilter('tv')}>TV Series</a>
         <a href="#story-finder">Find Similar</a>
+        <a href="#title-search">Title Search</a>
       </nav>
       <a className="header-search" href="#story-finder" aria-label="Go to search"><Search size={19} aria-hidden="true" /></a>
     </div></header>
@@ -181,8 +209,8 @@ export default function App() {
             <button type="button" className={mediaType === 'tv' ? 'active' : ''} aria-pressed={mediaType === 'tv'} onClick={() => selectMediaType('tv')}>TV Series</button>
           </div>
           <form className="finder-form" onSubmit={(event) => { event.preventDefault(); handleSearch(); }}>
-            <label className="sr-only" htmlFor="title-search">Enter a movie or TV series title</label><Search size={20} aria-hidden="true" />
-            <input id="title-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Enter a movie or series..." />
+            <label className="sr-only" htmlFor="story-title-input">Enter a movie or TV series title</label><Search size={20} aria-hidden="true" />
+            <input id="story-title-input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Enter a movie or series..." />
             <button type="submit" disabled={isLoading}>{isLoading ? 'Finding stories...' : 'Find similar'} <ArrowUpRight size={16} aria-hidden="true" /></button>
           </form>
           <div className="suggestions"><span>Try:</span>{suggestions.map(({ title, type }) => <button type="button" key={title} onClick={() => searchForTitle(title, type)}>{title}</button>)}</div>
@@ -197,8 +225,10 @@ export default function App() {
         {!isLoading && results.length > 0 && <><p className="results-context">Based on <strong>{lastSearched}</strong> · {lastSearchedType === 'movie' ? 'Movies' : 'TV Series'}</p><div className="poster-grid results-grid">{results.map((item, index) => <article className="title-card" key={`${item.id}-${index}`}><Poster title={item.title} path={item.poster_path} /><div className="card-copy"><h3>{item.title}</h3><p>{item.genres?.split(',').slice(0, 3).join(' · ')}</p><p className="card-overview">{item.overview || 'No synopsis available.'}</p></div></article>)}</div></>}
       </div></section>}
 
+      <TitleSearch />
+
       <section className="discovery-section" id="discovery" aria-labelledby="discovery-title"><div className="page-width">
-        <div className="section-heading-row"><div><p className="eyebrow">02 / The discovery shelf</p><h2 id="discovery-title" className="display-heading">Worth your evening.</h2></div><div className="shelf-tabs" role="group" aria-label="Filter discovery titles">
+        <div className="section-heading-row"><div><p className="eyebrow">03 / The discovery shelf</p><h2 id="discovery-title" className="display-heading">Worth your evening.</h2></div><div className="shelf-tabs" role="group" aria-label="Filter discovery titles">
           <button className={shelfFilter === 'all' ? 'active' : ''} aria-pressed={shelfFilter === 'all'} onClick={() => setShelfFilter('all')}>All</button>
           <button className={shelfFilter === 'movie' ? 'active' : ''} aria-pressed={shelfFilter === 'movie'} onClick={() => setShelfFilter('movie')}>Movies</button>
           <button className={shelfFilter === 'tv' ? 'active' : ''} aria-pressed={shelfFilter === 'tv'} onClick={() => setShelfFilter('tv')}>TV Series</button>
@@ -206,9 +236,9 @@ export default function App() {
         <div className="poster-grid shelf-grid">{visibleTitles.map((item) => <button className="title-card shelf-card" type="button" key={item.id} onClick={() => searchForTitle(item.title, item.type)} aria-label={`Find stories similar to ${item.title}`}><Poster title={item.title} path={item.poster} /><span className="card-copy"><strong>{item.title}</strong><span>{item.type === 'movie' ? 'Film' : 'TV Series'} · {item.genres}</span></span></button>)}</div>
       </div></section>
 
-      <section className="collections-section" aria-labelledby="collections-title"><div className="page-width"><p className="eyebrow">03 / Curated worlds</p><h2 id="collections-title" className="display-heading">Choose your kind of escape.</h2><div className="collection-grid">{collections.map((collection) => <article className={`collection-card ${collection.style}`} key={collection.title}><div className="collection-images" aria-hidden="true">{collection.posters.map((poster) => <Poster key={poster.id} title={poster.title} path={poster.poster} />)}</div><div className="collection-copy"><h3>{collection.title}</h3><p>{collection.caption}</p></div></article>)}</div></div></section>
+      <section className="collections-section" aria-labelledby="collections-title"><div className="page-width"><p className="eyebrow">04 / Curated worlds</p><h2 id="collections-title" className="display-heading">Choose your kind of escape.</h2><div className="collection-grid">{collections.map((collection) => <article className={`collection-card ${collection.style}`} key={collection.title}><div className="collection-images" aria-hidden="true">{collection.posters.map((poster) => <Poster key={poster.id} title={poster.title} path={poster.poster} />)}</div><div className="collection-copy"><h3>{collection.title}</h3><p>{collection.caption}</p></div></article>)}</div></div></section>
 
-      <section className="spotlight-section" aria-labelledby="spotlight-title"><div className="spotlight-art"><Poster title="Dark" path={titles[5].poster} /><span>DARK</span></div><div className="spotlight-copy"><p className="eyebrow dark-eyebrow">04 / Series spotlight</p><h2 id="spotlight-title" className="display-heading">Some stories<br />take their time.</h2><p className="spotlight-name">Dark</p><p>A missing child. Four families. A mystery across generations.</p><button type="button" className="button button-lime" onClick={() => searchForTitle('Dark', 'tv')}>Find stories like Dark <ArrowUpRight size={17} aria-hidden="true" /></button></div></section>
+      <section className="spotlight-section" aria-labelledby="spotlight-title"><div className="spotlight-art"><Poster title="Dark" path={titles[5].poster} /><span>DARK</span></div><div className="spotlight-copy"><p className="eyebrow dark-eyebrow">05 / Series spotlight</p><h2 id="spotlight-title" className="display-heading">Some stories<br />take their time.</h2><p className="spotlight-name">Dark</p><p>A missing child. Four families. A mystery across generations.</p><button type="button" className="button button-lime" onClick={() => searchForTitle('Dark', 'tv')}>Find stories like Dark <ArrowUpRight size={17} aria-hidden="true" /></button></div></section>
     </main>
 
     <footer className="site-footer"><div className="page-width"><div className="footer-main"><a className="brand" href="#top" aria-label="Frame home"><span className="brand-corner">⌜</span><span>FRAME</span><span className="brand-corner">⌝</span></a><p>Good stories are worth finding.</p><nav aria-label="Footer navigation"><a href="#top">Home</a><a href="#discovery" onClick={() => setShelfFilter('movie')}>Movies</a><a href="#discovery" onClick={() => setShelfFilter('tv')}>TV Series</a><a href="#story-finder">Find Similar</a></nav></div><div className="footer-bottom"><span>A place for people who love cinema.</span><span>Frame · Discovery journal</span></div></div></footer>
