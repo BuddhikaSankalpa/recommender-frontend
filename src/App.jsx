@@ -3,10 +3,12 @@ import { ArrowRight, ArrowUpRight, Film, Loader2, Search } from 'lucide-react';
 import './App.css';
 import TitleSearch from './TitleSearch';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
-const API_URL = 'http://127.0.0.1:8000/recommend';
-const SHELF_API_URL = 'http://127.0.0.1:8000/shelf';
-const SURPRISE_API_URL = 'http://127.0.0.1:8000/surprise';
+const API_URL = `${BASE_URL}/recommend`;
+const SHELF_API_URL = `${BASE_URL}/shelf`;
+const SURPRISE_API_URL = `${BASE_URL}/surprise`;
 const heroImages = [
   '/images/hero-image-1.webp',
   '/images/hero-image-2.webp',
