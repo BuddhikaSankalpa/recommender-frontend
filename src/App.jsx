@@ -6,23 +6,11 @@ import TitleSearch from './TitleSearch';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 const API_URL = 'http://127.0.0.1:8000/recommend';
 const SHELF_API_URL = 'http://127.0.0.1:8000/shelf';
+const SURPRISE_API_URL = 'http://127.0.0.1:8000/surprise';
 const heroImages = [
   '/images/hero-image-1.webp',
   '/images/hero-image-2.webp',
   '/images/hero-image-3.webp',
-];
-
-// Editorial selections used by the other homepage sections.
-const titles = [
-  { id: 329865, title: 'Arrival', type: 'movie', genres: 'Drama · Science Fiction · Mystery', poster: '/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg' },
-  { id: 666277, title: 'Past Lives', type: 'movie', genres: 'Drama · Romance', poster: '/rzO71VFu7CpJMfF5TQNMj0d1lSV.jpg' },
-  { id: 414906, title: 'The Batman', type: 'movie', genres: 'Crime · Mystery · Thriller', poster: '/74xTEgt7R36Fpooo50r9T25onhq.jpg' },
-  { id: 545611, title: 'Everything Everywhere All at Once', type: 'movie', genres: 'Action · Adventure · Science Fiction', poster: '/rKvCys0fMIIi1X9rmJBxTPLAtoU.jpg' },
-  { id: 120467, title: 'The Grand Budapest Hotel', type: 'movie', genres: 'Comedy · Drama', poster: '/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg' },
-  { id: 70523, title: 'Dark', type: 'tv', genres: 'Drama · Sci-Fi & Fantasy · Mystery', poster: '/apbrbWs8M9lyOpJYU5WXrpFbk1Z.jpg' },
-  { id: 95396, title: 'Severance', type: 'tv', genres: 'Drama · Mystery · Sci-Fi & Fantasy', poster: '/lFf6LLrQjYldcZItzOkGmMMigP7.jpg' },
-  { id: 66732, title: 'Stranger Things', type: 'tv', genres: 'Drama · Sci-Fi & Fantasy · Mystery', poster: '/49WJfeN0moxb9IPfGn8AIqMGskD.jpg' },
-  { id: 100088, title: 'The Last of Us', type: 'tv', genres: 'Drama', poster: '/uKvVjHNqB5VmOrdxqAt2F7J78ED.jpg' },
 ];
 
 const collections = [
@@ -81,6 +69,7 @@ export default function App() {
   const collectionRef = useRef(null);
   const searchControllerRef = useRef(null);
   const searchRequestRef = useRef(0);
+  const previousSurpriseRef = useRef(null);
   const shelfRequestRef = useRef(null);
   const lastScrolledOutcomeRef = useRef(null);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
@@ -221,6 +210,39 @@ export default function App() {
     handleSearch(title, type, tmdbId);
   };
 
+  const handleSurprise = async () => {
+    const requestId = ++searchRequestRef.current;
+    searchControllerRef.current?.abort();
+    const controller = new AbortController();
+    searchControllerRef.current = controller;
+    setHasAttemptedSearch(true);
+    setResults([]);
+    setError('');
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (previousSurpriseRef.current) {
+        params.set('previous_id', String(previousSurpriseRef.current.id));
+        params.set('previous_media_type', previousSurpriseRef.current.media_type);
+      }
+      const response = await fetch(`${SURPRISE_API_URL}${params.size ? `?${params}` : ''}`, { signal: controller.signal });
+      const selected = await response.json();
+      if (requestId !== searchRequestRef.current) return;
+      if (!response.ok) throw new Error(selected.detail || 'Unable to choose a title. Please try again.');
+      if (!selected.title || !Number.isInteger(selected.id) || !['movie', 'tv'].includes(selected.media_type)) {
+        throw new Error('Unable to choose a title. Please try again.');
+      }
+      previousSurpriseRef.current = { id: selected.id, media_type: selected.media_type };
+      searchForTitle(selected.title, selected.media_type, selected.id);
+    } catch (err) {
+      if (requestId !== searchRequestRef.current || err.name === 'AbortError') return;
+      console.error('Surprise title fetch error:', err);
+      setError(err.message || 'Unable to choose a title. Please try again.');
+      setIsLoading(false);
+      setCompletedOutcomeId(requestId);
+    }
+  };
+
   const selectShelfFilter = (filter) => {
     if (filter === shelfFilter) return;
     shelfRequestRef.current?.abort();
@@ -359,7 +381,7 @@ export default function App() {
         </div>}
       </div></section>
 
-      <section className="spotlight-section" aria-labelledby="spotlight-title"><div className="spotlight-art"><Poster title="Dark" path={titles[5].poster} /><span>DARK</span></div><div className="spotlight-copy"><p className="eyebrow dark-eyebrow">05 / Series spotlight</p><h2 id="spotlight-title" className="display-heading">Some stories<br />take their time.</h2><p className="spotlight-name">Dark</p><p>A missing child. Four families. A mystery across generations.</p><button type="button" className="button button-lime" onClick={() => searchForTitle('Dark', 'tv')}>Find stories like Dark <ArrowUpRight size={17} aria-hidden="true" /></button></div></section>
+      <section className="spotlight-section" aria-labelledby="spotlight-title"><div className="spotlight-art"><img src="/images/surprise-me-bg.webp" alt="" loading="lazy" /></div><div className="spotlight-copy"><p className="eyebrow dark-eyebrow">05 / SURPRISE ME</p><h2 id="spotlight-title" className="display-heading">Not sure what<br />to watch next?</h2><p>Discover a story you might never have searched for.</p><button type="button" className="button button-lime" onClick={handleSurprise}>Surprise me <ArrowUpRight size={17} aria-hidden="true" /></button></div></section>
     </main>
 
     <footer className="site-footer"><div className="page-width"><div className="footer-main"><a className="brand" href="#top" aria-label="Frame home"><span className="brand-corner">⌜</span><span>FRAME</span><span className="brand-corner">⌝</span></a><p>Good stories are worth finding.</p><nav aria-label="Footer navigation"><a href="#top">Home</a><a href="#discovery" onClick={() => selectShelfFilter('movie')}>Movies</a><a href="#discovery" onClick={() => selectShelfFilter('tv')}>TV Series</a><a href="#story-finder">Find Similar</a></nav></div><div className="footer-bottom"><span>A place for people who love cinema.</span><span>Frame · Discovery journal</span></div></div></footer>

@@ -123,14 +123,11 @@
 .collection-posters { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .spotlight-section { display: grid; grid-template-columns: 59% 41%; min-height: 330px; }
 .spotlight-art { position: relative; overflow: hidden; background: #0f1b1b; }
-.spotlight-art .poster { position: absolute; inset: 0; opacity: .55; }
-.spotlight-art .poster img { object-position: center 30%; filter: saturate(.65); }
+.spotlight-art > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 .spotlight-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #0b1719a3, transparent 65%); }
-.spotlight-art > span { position: absolute; z-index: 1; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: clamp(4rem, 8vw, 8rem); font-weight: 300; letter-spacing: .5em; padding-left: .5em; white-space: nowrap; }
 .spotlight-copy { background: #f1eee6; color: #111513; padding: 2.5rem 7vw 2rem 3rem; }
 .spotlight-copy .display-heading { font-size: clamp(3.1rem, 4.6vw, 5.4rem); }
 .spotlight-copy p:not(.eyebrow) { margin: .4rem 0; font-size: .8rem; }
-.spotlight-name { text-transform: uppercase; letter-spacing: .25em; font-weight: 700; }
 .spotlight-copy .button { margin-top: 1.2rem; }
 .site-footer { padding: 1.2rem 0 1rem; border-top: 1px solid #586057; background: #101411; }
 .footer-main { gap: 2rem; padding-bottom: 1.1rem; }
